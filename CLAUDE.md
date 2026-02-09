@@ -1,4 +1,4 @@
-# keynote-tracker - Claude Code Instructions
+# launch-scorecard - Claude Code Instructions
 
 ## Project Overview
 
