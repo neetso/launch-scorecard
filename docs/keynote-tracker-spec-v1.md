@@ -300,7 +300,7 @@ ship_rate = count(status IN [GA, PARTIAL]) / count(status NOT IN [REPLACED, CANC
   - Status
   - First shipped date
   - Late (overdue_days; displayed as "+Xd" chip when > 0, blank otherwise)
-  - Evidence count (with quick links)
+  - Evidence: "N sources" link (logged-in); count + evidence_strength label (logged-out, provides value before sign-up gate)
 - Filters: category, status, product_area, tag
 - Sort (dropdown, default "Most urgent"):
   - Most urgent: DELAYED first by overdue_days descending, then ANNOUNCED by proximity to target_window_end ascending, then shipped statuses last
@@ -311,7 +311,7 @@ ship_rate = count(status IN [GA, PARTIAL]) / count(status NOT IN [REPLACED, CANC
 ### Page: Commitment Detail (citation target)
 - Promise text + scope
 - Timeline (StatusHistory)
-- Evidence list (dated, with excerpt)
+- Evidence list (per item: type badge, URL, excerpt, published date, publisher, supported status)
 - Notes + confidence
 
 ### Page: Company Dashboard

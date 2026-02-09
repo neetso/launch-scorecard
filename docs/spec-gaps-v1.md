@@ -12,6 +12,7 @@ Tracking changes needed to bring the spec in line with the wireframe v3.1, wiref
 - [x] Methodology popover → per-surface content defined (Company Dashboard full, Event Scorecard with evidence strength, Commitment Detail compact); added REPLACED + CANCELLED to status definitions
 - [x] Sort options → 3 sort options defined (Most urgent, Newest updates, Most evidence) on Event Scorecard and Company Dashboard unshipped table
 - [x] Late/Overdue column → added to Event Scorecard table columns, references overdue_days computed field
+- [x] Evidence display → per-surface: scorecard logged-in shows count link, logged-out adds strength label; detail page shows full evidence list with type badge, URL, excerpt, published date, publisher, supported status
 
 ---
 
@@ -53,7 +54,7 @@ The wireframe has a "Late" column using the `overdue_days` computed field. The s
 
 ---
 
-## 7. Evidence display: count vs. strength vs. type badges
+## ~~7. Evidence display: count vs. strength vs. type badges~~
 
 **Source:** wireframe v3.1, `docs/wireframe/wireframe-feedback-implemented.md`
 
