@@ -308,6 +308,17 @@ ship_rate = count(status IN [GA, PARTIAL]) / count(status NOT IN [REPLACED, CANC
   - Most evidence: evidence count descending, then alphabetical by commitment title
 - KPI chips: ship rate, delayed count (rough is OK)
 
+### Page: Event Scorecard (logged-out)
+- KPI strip always visible (ship rate, total promises, shipped, partial, delayed counts)
+- Status distribution bar (thin colored proportional bar by status)
+- Basic filters available: status pills + search (export, watchlists, advanced filters gated)
+- First ~5 rows visible; remaining rows blurred
+- Evidence column: count + evidence_strength label (provides value before gate)
+- Blur microcopy: row count + sign-up prompt
+- Gate CTA: sign-up button, login link, feature checklist (full table, CSV export, status alerts, watchlists)
+- Share bar: Twitter, LinkedIn, copy link
+- SEO methodology block (static, crawlable): methodology summary, coverage statement, update cadence
+
 ### Page: Commitment Detail (citation target)
 - Promise text + scope
 - Timeline (StatusHistory)
