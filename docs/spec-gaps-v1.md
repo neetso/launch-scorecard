@@ -6,18 +6,7 @@ Tracking changes needed to bring the spec in line with the wireframe v3.1, wiref
 - [x] Importance tiers → ingestion gate only, no stored field
 - [x] PRODUCT_RELEASE_WAVE → not a global event type, OpenAI uses OTHER
 - [x] Computed fields → overdue_days, days_to_ga, evidence_strength, ship_rate formally defined
-
----
-
-## 1. Data model: UpcomingEvent entity
-
-**Source:** `docs/event_calendar-event_capture-earnings_input_type_automate_with_review.md`
-
-The calendar doc proposes a curated `UpcomingEvent` table for surfacing upcoming events to users and triggering operational ingestion. Not in the spec at all.
-
-**Fields suggested:** event source URLs, expected dates, confidence (confirmed vs. rumored), company.
-
-**Decision needed:** Is this a v1 entity or a later addition? If v1, define the schema. If later, note it as a planned extension and move on.
+- [x] UpcomingEvent → deferred to v1.1 with provisional schema in spec + stub in `docs/internal-tools-spec.md`
 
 ---
 

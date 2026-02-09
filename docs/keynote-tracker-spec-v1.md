@@ -159,6 +159,21 @@ Fields:
 - `weight` (int)
 - `added_at`
 
+### (v1.1) Entity: `UpcomingEvent`
+Forward-looking calendar of expected events. Serves two purposes: (1) operational trigger for ingestion readiness, (2) user-facing "what's coming" view across tracked companies. Deferred from v1 — not needed for the MVP scorecard, and pulls in calendar sourcing, date confidence, and a new UI surface. See `docs/internal-tools-spec.md` for the operational stub.
+
+Fields (provisional):
+- `upcoming_event_id` (string/uuid)
+- `company` (enum)
+- `expected_name` (string; e.g., "re:Invent 2026")
+- `event_type` (enum; same as Event)
+- `expected_date` (date, nullable)
+- `date_confidence` (enum: CONFIRMED, EXPECTED, RUMORED)
+- `source_urls` (array[string]; IR page, event page, etc.)
+- `notes` (text, optional)
+- `linked_event_id` (fk to Event, nullable; set once the event actually happens and an Event is created)
+- `created_at`, `updated_at`
+
 ---
 
 ## Computed Fields
