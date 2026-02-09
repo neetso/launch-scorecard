@@ -11,6 +11,7 @@ Tracking changes needed to bring the spec in line with the wireframe v3.1, wiref
 - [x] Ingestion automation → expanded with capture methods (RSS, transcripts, recaps, manual), SLA targets, and cross-ref to internal tools spec
 - [x] Methodology popover → per-surface content defined (Company Dashboard full, Event Scorecard with evidence strength, Commitment Detail compact); added REPLACED + CANCELLED to status definitions
 - [x] Sort options → 3 sort options defined (Most urgent, Newest updates, Most evidence) on Event Scorecard and Company Dashboard unshipped table
+- [x] Late/Overdue column → added to Event Scorecard table columns, references overdue_days computed field
 
 ---
 
@@ -42,7 +43,7 @@ The feedback doc also mentioned "Most overdue", "Evidence-light", "Lowest confid
 
 ---
 
-## 6. Late/Overdue column on event scorecard
+## ~~6. Late/Overdue column on event scorecard~~
 
 **Source:** `docs/wireframe/wireframe-feedback-implemented.md` (P0), wireframe v3.1
 

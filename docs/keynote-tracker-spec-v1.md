@@ -299,6 +299,7 @@ ship_rate = count(status IN [GA, PARTIAL]) / count(status NOT IN [REPLACED, CANC
   - Target window
   - Status
   - First shipped date
+  - Late (overdue_days; displayed as "+Xd" chip when > 0, blank otherwise)
   - Evidence count (with quick links)
 - Filters: category, status, product_area, tag
 - Sort (dropdown, default "Most urgent"):
