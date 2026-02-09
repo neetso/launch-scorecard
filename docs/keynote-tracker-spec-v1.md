@@ -502,26 +502,59 @@ Notes:
 
 ## **Ingestion workflow (minimal but scalable)**
 
-### **Step 1: Seed events manually (10 mins/event)**
+**Core principle:** auto-capture → LLM draft → human review → publish. Never publish without human review. See `docs/internal-tools-spec.md` for tool-level detail.
 
-For each keynote: add event row + the official recap URL(s).
+### **Step 1: Capture source material**
 
-### **Step 2: Extract candidate commitments from recap page (LLM-assisted)**
+Source material arrives through different channels depending on the event type:
 
-- Pull the recap page text (HTML → clean text)
-- LLM outputs **announcement objects** + split into **atomic commitments**
+**Structured feeds (continuous monitoring)**
+- RSS/webhook monitors on official release note feeds: AWS "What's New", Microsoft 365 Roadmap, Google Cloud release notes, OpenAI product releases blog
+- These fire automatically when new content is published and feed into the `raw_release_items` pipeline
+
+**Keynote/conference capture (event-driven)**
+- **Livestream transcripts:** pull YouTube auto-generated captions or use speech-to-text on the livestream. Gives raw promise candidates within minutes of the event ending. Store with timestamps for later citation.
+- **Official recap pages:** Microsoft "Book of News", AWS "Top announcements", Google I/O recap posts. These are structured and publish same-day — monitor the known URL patterns and trigger ingestion when live.
+- **Press releases:** company newsrooms and PR wires (Business Wire, PR Newswire). Often go live during or right after the keynote.
+
+**Earnings transcripts (quarterly)**
+- Available within hours from IR pages. See "Earnings calls as an input type" section for the specific workflow.
+
+**Manual input (fallback)**
+- Operator pastes text or provides URL directly. Always available for sources that aren't covered by automated capture.
+
+### **Step 2: Seed event + extract commitments (LLM-assisted)**
+
+For each event:
+1. Create the Event record (company, name, type, dates, source URLs)
+2. Pull the source material text (HTML → clean text, or transcript)
+3. Run the "split recap into atomic commitments" prompt (see Prompt 1 below) → structured JSON of announcements + commitments
+4. Operator reviews extracted items: accept, edit, skip, or merge (see internal tools spec, Tool 2)
+5. Accepted items create Announcement + Commitment + initial StatusHistory (ANNOUNCED) + source Evidence record
 
 ### **Step 3: Evidence matching (semi-automated)**
 
-For each commitment, you search only “shipping sources” for that company (release notes / roadmap / docs).
+For each commitment, search that company's shipping sources (release notes, docs, changelogs, official blogs) for evidence of delivery.
 
-- When you find evidence, you add evidence rows and write a status_history entry.
+1. Candidate matching: search shipping sources for references to the commitment's product area, feature name, or related keywords
+2. LLM validation: for each candidate, run the evidence validation prompt (see Prompt 2 below) → decision, date, excerpt
+3. Operator reviews matches: accept, edit, reject, or flag for later
+4. Accepted matches create Evidence record + StatusHistory entry
 
 ### **Step 4: Weekly refresh**
 
-Re-run evidence matching for “not GA” items.
+Re-run evidence matching (Step 3) for all commitments where `status NOT IN [GA, CANCELLED, REPLACED]`.
 
-This is where compounding happens.
+This is where compounding happens — each week, more commitments move from ANNOUNCED to shipped states, and the evidence chain grows.
+
+### **SLA targets**
+
+| Event type          | Draft (LLM-extracted) | Published (human-reviewed) |
+|---------------------|-----------------------|----------------------------|
+| Major keynote       | Within 2h             | Within 24–48h              |
+| Earnings call       | Within 4h             | Within 48h                 |
+| Product launch post | Within 1h             | Within 24h                 |
+| Weekly release notes| Auto-classified       | Same-day review            |
 
 -----
 

@@ -8,35 +8,7 @@ Tracking changes needed to bring the spec in line with the wireframe v3.1, wiref
 - [x] Computed fields → overdue_days, days_to_ga, evidence_strength, ship_rate formally defined
 - [x] UpcomingEvent → deferred to v1.1 with provisional schema in spec + stub in `docs/internal-tools-spec.md`
 - [x] Earnings as input type → added to spec with workflow, evidence rules, and confidence caps
-
-**Source:** `docs/event_calendar-event_capture-earnings_input_type_automate_with_review.md`
-
-The `EARNINGS` event_type exists in the enum but the spec never describes the workflow. The calendar doc recommends:
-- Treat earnings transcripts as **announcement sources** (extract product/feature claims from prepared remarks and Q&A)
-- Also use earnings transcripts as **evidence** for existing commitments (e.g., CEO confirms "we shipped X to all enterprise customers last quarter" → `EARNINGS_IR` evidence record)
-
-**What to add:** A short section (similar to the OpenAI company rules) describing how earnings events are ingested, what gets extracted, and how claims map to commitments vs. evidence.
-
----
-
-## 3. Ingestion automation and capture methods
-
-**Source:** `docs/event_calendar-event_capture-earnings_input_type_automate_with_review.md`
-
-The spec has a basic 4-step ingestion workflow. The calendar doc describes a richer pipeline:
-- RSS/webhook monitors on official sources (AWS What's New, M365 Roadmap, etc.)
-- Livestream transcript capture (YouTube auto-captions / speech-to-text)
-- Official recap/Book of News page scraping (same-day)
-- LLM-assisted extraction with different SLAs per event type:
-
-| Event type          | Draft scorecard | Published (reviewed) |
-|---------------------|-----------------|----------------------|
-| Major keynote       | Within 2h       | Within 24–48h        |
-| Earnings call       | Within 4h       | Within 48h           |
-| Product launch post | Within 1h       | Within 24h           |
-| Weekly release notes| Auto-classified | Same-day review      |
-
-**What to add:** Expand the ingestion workflow section with capture methods and SLA targets. Keep the principle: "never publish without human review."
+- [x] Ingestion automation → expanded with capture methods (RSS, transcripts, recaps, manual), SLA targets, and cross-ref to internal tools spec
 
 ---
 
