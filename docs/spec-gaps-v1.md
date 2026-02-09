@@ -20,6 +20,7 @@ Tracking changes needed to bring the spec in line with the wireframe v3.1, wiref
 - [x] Ship rate per event + coverage → events list with per-event ship_rate; coverage statement near last-updated
 - [x] Related commitments → sidebar on detail page, priority: same announcement > same product_area > shared tags
 - [x] Logged-out scorecard → full section: KPI strip, status bar, basic filters, blur gate, share bar, SEO methodology block
+- [x] Scope visibility → codified: detail page only, not on scorecard table
 
 ---
 
@@ -180,7 +181,7 @@ The spec's logged-out requirements just mention "first ~5 rows visible, remainin
 
 ---
 
-## 15. Scope: scorecard vs. detail-only
+## ~~15. Scope: scorecard vs. detail-only~~
 
 **Source:** wireframe v3.1 annotation, `docs/wireframe/wireframe-feedback-implemented.md`
 
