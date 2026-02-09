@@ -14,6 +14,7 @@ Tracking changes needed to bring the spec in line with the wireframe v3.1, wiref
 - [x] Late/Overdue column → added to Event Scorecard table columns, references overdue_days computed field
 - [x] Evidence display → per-surface: scorecard logged-in shows count link, logged-out adds strength label; detail page shows full evidence list with type badge, URL, excerpt, published date, publisher, supported status
 - [x] Copy evidence list → button added to Commitment Detail, copies bullet list of sources
+- [x] Citation format → canonical format defined with company, title, commitment ID, status as-of, accessed date, stable URL
 
 ---
 
@@ -80,7 +81,7 @@ The commitment detail page has "Copy citation" (already in spec) AND "Copy evide
 
 ---
 
-## 9. Citation format
+## ~~9. Citation format~~
 
 **Source:** `docs/wireframe/wireframe-feedback-implemented.md` (P0), wireframe v3.1
 

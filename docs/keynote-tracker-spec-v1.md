@@ -313,6 +313,8 @@ ship_rate = count(status IN [GA, PARTIAL]) / count(status NOT IN [REPLACED, CANC
 - Timeline (StatusHistory)
 - Evidence list (per item: type badge, URL, excerpt, published date, publisher, supported status)
 - Copy evidence list button (copies bullet list: each item includes source type, URL, published date, excerpt)
+- Copy citation button; canonical format:
+  `{Company}, "{title}," Launch Scorecard, commitment ID {commitment_id}. Status: {status} (as of {status_date}). Accessed: {today}. URL: launchscorecard.dev/c/{commitment_id}`
 - Notes + confidence
 
 ### Page: Company Dashboard
