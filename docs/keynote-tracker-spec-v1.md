@@ -322,8 +322,10 @@ ship_rate = count(status IN [GA, PARTIAL]) / count(status NOT IN [REPLACED, CANC
   - "Since" period selector: 7d / 30d / All
   - Activity filter: upgrades only (e.g., Preview → GA), slips only, new commitments
   - Status-change CSV export (separate from commitments export)
-- Unshipped commitments
-  - Sort on unshipped table (same options as Event Scorecard)
+- Unshipped commitments table
+  - Columns: Commitment (with event name + category meta row), Status, Target window, Overdue (overdue_days as "+Xd" chip)
+  - Sort (same options as Event Scorecard)
+  - Filter pills: All / Unshipped / Delayed
 - Delayed commitments
 - Simple reliability stats (ship rate, median time-to-GA)
 

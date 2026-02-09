@@ -16,6 +16,7 @@ Tracking changes needed to bring the spec in line with the wireframe v3.1, wiref
 - [x] Copy evidence list → button added to Commitment Detail, copies bullet list of sources
 - [x] Citation format → canonical format defined with company, title, commitment ID, status as-of, accessed date, stable URL
 - [x] Activity feed controls → "Since" selector (7d/30d/All), activity filter (upgrades/slips/new), status-change CSV export
+- [x] Unshipped table → columns (Commitment with event meta, Status, Target window, Overdue), filter pills (All/Unshipped/Delayed)
 
 ---
 
@@ -113,7 +114,7 @@ The spec's Company Dashboard section doesn't cover any of this.
 
 ---
 
-## 11. Company dashboard: unshipped table enhancements
+## ~~11. Company dashboard: unshipped table enhancements~~
 
 **Source:** `docs/wireframe/wireframe-feedback-implemented.md` (P0), wireframe v3.1
 
