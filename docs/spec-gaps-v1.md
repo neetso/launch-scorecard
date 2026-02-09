@@ -10,6 +10,7 @@ Tracking changes needed to bring the spec in line with the wireframe v3.1, wiref
 - [x] Earnings as input type → added to spec with workflow, evidence rules, and confidence caps
 - [x] Ingestion automation → expanded with capture methods (RSS, transcripts, recaps, manual), SLA targets, and cross-ref to internal tools spec
 - [x] Methodology popover → per-surface content defined (Company Dashboard full, Event Scorecard with evidence strength, Commitment Detail compact); added REPLACED + CANCELLED to status definitions
+- [x] Sort options → 3 sort options defined (Most urgent, Newest updates, Most evidence) on Event Scorecard and Company Dashboard unshipped table
 
 ---
 
@@ -26,7 +27,7 @@ The wireframe has a methodology popover on all three main surfaces (company dash
 
 ---
 
-## 5. Sort options
+## ~~5. Sort options~~
 
 **Source:** `docs/wireframe/wireframe-feedback-implemented.md` (P0), wireframe v3.1
 

@@ -301,6 +301,10 @@ ship_rate = count(status IN [GA, PARTIAL]) / count(status NOT IN [REPLACED, CANC
   - First shipped date
   - Evidence count (with quick links)
 - Filters: category, status, product_area, tag
+- Sort (dropdown, default "Most urgent"):
+  - Most urgent: DELAYED first by overdue_days descending, then ANNOUNCED by proximity to target_window_end ascending, then shipped statuses last
+  - Newest updates: updated_at descending
+  - Most evidence: evidence count descending, then alphabetical by commitment title
 - KPI chips: ship rate, delayed count (rough is OK)
 
 ### Page: Commitment Detail (citation target)
@@ -312,6 +316,7 @@ ship_rate = count(status IN [GA, PARTIAL]) / count(status NOT IN [REPLACED, CANC
 ### Page: Company Dashboard
 - Recent changes (StatusHistory feed)
 - Unshipped commitments
+  - Sort on unshipped table (same options as Event Scorecard)
 - Delayed commitments
 - Simple reliability stats (ship rate, median time-to-GA)
 
