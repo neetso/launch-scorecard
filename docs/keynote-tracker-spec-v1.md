@@ -312,6 +312,7 @@ ship_rate = count(status IN [GA, PARTIAL]) / count(status NOT IN [REPLACED, CANC
 - Promise text + scope
 - Timeline (StatusHistory)
 - Evidence list (per item: type badge, URL, excerpt, published date, publisher, supported status)
+- Copy evidence list button (copies bullet list: each item includes source type, URL, published date, excerpt)
 - Notes + confidence
 
 ### Page: Company Dashboard

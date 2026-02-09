@@ -13,6 +13,7 @@ Tracking changes needed to bring the spec in line with the wireframe v3.1, wiref
 - [x] Sort options → 3 sort options defined (Most urgent, Newest updates, Most evidence) on Event Scorecard and Company Dashboard unshipped table
 - [x] Late/Overdue column → added to Event Scorecard table columns, references overdue_days computed field
 - [x] Evidence display → per-surface: scorecard logged-in shows count link, logged-out adds strength label; detail page shows full evidence list with type badge, URL, excerpt, published date, publisher, supported status
+- [x] Copy evidence list → button added to Commitment Detail, copies bullet list of sources
 
 ---
 
@@ -69,7 +70,7 @@ The spec's UI section just says "Evidence count (with quick links)."
 
 ---
 
-## 8. Copy evidence list button
+## ~~8. Copy evidence list button~~
 
 **Source:** `docs/wireframe/wireframe-feedback-implemented.md` (P0), wireframe v3.1
 
