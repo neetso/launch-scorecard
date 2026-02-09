@@ -1,4 +1,4 @@
-# Keynote Promise Tracker — Product & Data Spec (v1)
+# Launch Scorecard — Product & Data Spec (v1)
 
 ## Goal
 Create a trustworthy tracker that answers, for major tech companies:
@@ -15,6 +15,24 @@ This is an **evidence-led ledger**. The database and status history are the moat
 - Perfect success scoring across all products (do later)
 - Fully automated extraction without human review
 - Exhaustive coverage of all minor features
+
+---
+
+## Design Principle: API-First
+
+Every feature is built as an API endpoint first, UI second. The public site and internal operator tools are both consumers of the same API.
+
+**Why:**
+- The API *is* the product for enterprise/team tiers (data feed access is a paid feature — see pricing tiers).
+- Forces clean separation between data logic and presentation.
+- Internal tools (ingestion, evidence matching, weekly refresh) use the same API the public site does — no backdoor writes.
+- Makes the platform testable and scriptable from day one.
+
+**Rules:**
+- No business logic lives exclusively in the UI layer. If the UI can do it, the API can do it.
+- All computed fields (ship_rate, overdue_days, days_to_ga, evidence_strength) are returned by the API, not calculated client-side.
+- Every public page's data is available via a corresponding API endpoint (same filters, sort, pagination).
+- Internal/operator endpoints share the same API surface, gated by auth/role — not a separate system.
 
 ---
 
