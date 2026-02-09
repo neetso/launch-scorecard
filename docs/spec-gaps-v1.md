@@ -17,6 +17,7 @@ Tracking changes needed to bring the spec in line with the wireframe v3.1, wiref
 - [x] Citation format → canonical format defined with company, title, commitment ID, status as-of, accessed date, stable URL
 - [x] Activity feed controls → "Since" selector (7d/30d/All), activity filter (upgrades/slips/new), status-change CSV export
 - [x] Unshipped table → columns (Commitment with event meta, Status, Target window, Overdue), filter pills (All/Unshipped/Delayed)
+- [x] Ship rate per event + coverage → events list with per-event ship_rate; coverage statement near last-updated
 
 ---
 
@@ -131,7 +132,7 @@ The spec's Company Dashboard section lists "Unshipped commitments" but not these
 
 ---
 
-## 12. Company dashboard: ship rate per event + coverage statement
+## ~~12. Company dashboard: ship rate per event + coverage statement~~
 
 **Source:** `docs/wireframe/wireframe-feedback-implemented.md` (P0), wireframe v3.1
 

@@ -327,6 +327,8 @@ ship_rate = count(status IN [GA, PARTIAL]) / count(status NOT IN [REPLACED, CANC
   - Sort (same options as Event Scorecard)
   - Filter pills: All / Unshipped / Delayed
 - Delayed commitments
+- Events list (per event: date, name, type badge, commitment count, ship_rate percentage)
+- Coverage statement near last-updated timestamp ("Excludes minor UI tweaks and bugfixes")
 - Simple reliability stats (ship rate, median time-to-GA)
 
 ### Component: Methodology Popover
