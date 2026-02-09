@@ -525,6 +525,51 @@ This is where compounding happens.
 
 -----
 
+## **Earnings calls as an input type**
+
+The `EARNINGS` event type and `EARNINGS_IR` evidence type exist in the schema but need explicit workflow rules. Earnings calls matter for two reasons: companies make forward-looking product claims on calls, and they sometimes quietly confirm or walk back prior commitments.
+
+### Which companies have earnings (Phase 1)
+- **Microsoft** (quarterly; covers Azure, M365, Copilot)
+- **Google / Alphabet** (quarterly; covers Cloud, Workspace, AI)
+- **Amazon / AWS** (quarterly; covers AWS services)
+- **OpenAI** — private, no earnings calls. Skip.
+
+### When to create an EARNINGS event
+Create an Event with `event_type: EARNINGS` for each quarterly earnings call of a tracked public company. Use a slug like `ms-earnings-2026-q1`.
+
+These are lightweight events — they rarely produce more than a handful of commitments. The primary value is as an evidence source for existing commitments.
+
+### Earnings as an announcement source
+Extract forward-looking product claims from prepared remarks and Q&A. These become commitments only if they meet the same eligibility criteria as keynote announcements:
+- New capability, availability, economics, distribution, or governance claim
+- Not a restatement of something already tracked
+
+Typical earnings commitment: "We expect [feature] to be generally available to all enterprise customers by end of Q3." This becomes a commitment with `availability_claim_raw` from the transcript and a `target_window_end`.
+
+Most earnings calls produce 0–5 new commitments. Do not over-extract — earnings language is often vague and aspirational.
+
+### Earnings as evidence for existing commitments
+This is the higher-value use case. Scan the transcript for references to existing tracked commitments:
+- CEO/CFO confirms shipping: "We launched X to all enterprise customers last quarter" → `EARNINGS_IR` evidence record supporting `GA` or `PARTIAL`
+- Management acknowledges delay: "X is taking longer than expected, we now expect H2" → `EARNINGS_IR` evidence supporting `DELAYED`, update `target_window_end`
+- Feature quietly dropped: no mention of a previously hyped commitment across multiple quarters → not evidence by itself, but flag for operator attention during weekly refresh
+
+### Evidence rules for EARNINGS_IR
+- `EARNINGS_IR` evidence **can** advance a commitment to `PARTIAL` or support a `DELAYED` status change
+- `EARNINGS_IR` evidence **cannot** alone advance a commitment to `GA` — require at least one primary source (`RELEASE_NOTES`, `DOCS`, or `BLOG_OFFICIAL`) to confirm GA. Earnings claims are management statements, not shipping proof.
+- When `EARNINGS_IR` is the only evidence for a status, cap `confidence` at 0.7
+
+### Ingestion workflow for earnings
+1. Obtain transcript (available within hours from IR pages, Seeking Alpha, etc.)
+2. Run LLM extraction: identify (a) new forward-looking claims → candidate commitments, (b) references to existing tracked commitments → candidate evidence
+3. Operator reviews both sets in the standard review queue (see internal tools spec, Tool 2)
+4. Publish
+
+**SLA:** Draft within 4h of transcript availability. Published (reviewed) within 48h.
+
+-----
+
 ## **Prompt examples for extraction and validation**
 
 ### **Prompt 1 — “Split recap into atomic commitments”**

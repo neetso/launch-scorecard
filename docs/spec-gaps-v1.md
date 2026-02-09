@@ -7,10 +7,7 @@ Tracking changes needed to bring the spec in line with the wireframe v3.1, wiref
 - [x] PRODUCT_RELEASE_WAVE → not a global event type, OpenAI uses OTHER
 - [x] Computed fields → overdue_days, days_to_ga, evidence_strength, ship_rate formally defined
 - [x] UpcomingEvent → deferred to v1.1 with provisional schema in spec + stub in `docs/internal-tools-spec.md`
-
----
-
-## 2. Earnings as an input type
+- [x] Earnings as input type → added to spec with workflow, evidence rules, and confidence caps
 
 **Source:** `docs/event_calendar-event_capture-earnings_input_type_automate_with_review.md`
 
