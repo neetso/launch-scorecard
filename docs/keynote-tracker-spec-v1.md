@@ -161,6 +161,100 @@ Fields:
 
 ---
 
+## Computed Fields
+
+These fields are derived server-side from stored data. They are not stored directly on entities but are calculated on read. They drive KPI chips, table columns, sort orders, and the methodology popover. Definitions here are canonical — use these in customer-facing methodology documentation.
+
+### `overdue_days` (per commitment)
+
+How late a commitment is relative to its claimed target window.
+
+**Inputs:** `target_window_end`, `first_ship_date`, `status`, current date
+
+**Calculation:**
+- If `target_window_end` is null → `null` (no target to measure against)
+- If `status` is `GA` or `PARTIAL` and `first_ship_date` exists → `first_ship_date − target_window_end` in days
+  - Positive = shipped late
+  - Zero or negative = shipped on time or early
+- If `status` is not terminal (`GA`, `PARTIAL`, `CANCELLED`, `REPLACED`) and `target_window_end < today` → `today − target_window_end` in days (accumulating overdue)
+- If `target_window_end >= today` and not yet shipped → `null` (not yet overdue)
+
+**Display:**
+- Positive → `+Xd` red overdue chip
+- Zero or negative (shipped) → `on time` green label
+- Null → dash
+
+**Note:** `DELAYED` commitments show overdue_days against the *original* target window. Resetting the clock on a slip would hide accountability.
+
+---
+
+### `days_to_ga` (per commitment)
+
+Calendar days from announcement to first evidence of general availability.
+
+**Inputs:** `event.start_date` (from parent event), `first_ship_date`, `status`
+
+**Calculation:**
+- If `status = GA` and `first_ship_date` exists → `first_ship_date − event.start_date` in days
+- Otherwise → `null`
+
+**Aggregation:**
+- **Median time to GA** (per company or event): median of `days_to_ga` across all GA commitments in scope. Displayed on the company dashboard.
+- Ignore null values (non-GA commitments) when computing the median.
+
+**Why event date, not target_window_start:** This answers "how long between promise and delivery," which is the analyst-useful metric. Measuring from the claimed target window would answer "how accurate was the estimate" — a valid but secondary question that `overdue_days` already covers.
+
+---
+
+### `evidence_strength` (per commitment)
+
+A label reflecting the quality of the best available evidence, based on the evidence priority rules.
+
+**Inputs:** all `Evidence` records for this commitment, specifically their `evidence_type` values
+
+**Calculation:** Take the highest-priority evidence type attached to the commitment and map it:
+
+| Best evidence type present | Label |
+|---|---|
+| `RELEASE_NOTES`, `CHANGELOG`, or `DOCS` | **Strong** |
+| `BLOG_OFFICIAL` or `ROADMAP` | **Medium** |
+| `PARTNER_ANNOUNCEMENT` or `THIRD_PARTY_VERIFICATION` | **Weak** |
+| No evidence records | **None** |
+
+**Priority order** (matches Evidence Priority Rules section):
+1. `RELEASE_NOTES` / `CHANGELOG` / `DOCS` (best)
+2. `BLOG_OFFICIAL` / `ROADMAP`
+3. `PARTNER_ANNOUNCEMENT`
+4. `THIRD_PARTY_VERIFICATION`
+
+If a commitment has both a `BLOG_OFFICIAL` and a `RELEASE_NOTES` evidence record, the strength is **Strong** (highest wins).
+
+**Display:** Small label badge (Strong = green, Medium = blue, Weak = gray, None = faint/hidden).
+
+---
+
+### `ship_rate` (per event or company)
+
+Percentage of commitments that have reached a shipped state.
+
+**Inputs:** all commitments in scope (for an event or a company), their `status` values
+
+**Calculation:**
+```
+ship_rate = count(status IN [GA, PARTIAL]) / count(status NOT IN [REPLACED, CANCELLED])
+```
+
+- **Numerator:** commitments with `status = GA` or `status = PARTIAL`
+- **Denominator:** all commitments *excluding* those with `status = REPLACED` or `status = CANCELLED`
+
+**Why exclude REPLACED and CANCELLED from the denominator:** A replaced commitment means something else took its place — not a broken promise. A cancelled commitment, while potentially negative, reflects transparency rather than silent abandonment. Penalizing companies for being explicit about cancellations would create perverse incentives. Both are excluded so the rate measures "of things still in play, what percentage shipped."
+
+**Display:** percentage in KPI chip (e.g., "56% Shipped"). Shown on event scorecard and company dashboard. Also shown per-event in the company dashboard events list.
+
+**Edge case:** If all commitments for an event are REPLACED or CANCELLED, the denominator is zero → display as "—" not "0%".
+
+---
+
 ## Public URLs (important for citations + SEO)
 - Event: `/event/{event_id}`
 - Company dashboard: `/company/{company}`
@@ -768,7 +862,7 @@ Implementation notes for UI:
 
   - StatusPill, ConfidenceBar, EvidenceBadges, ScopeChips, OverdueChip
 
-- Compute fields server-side once:
+- Compute fields server-side once (see **Computed Fields** section for canonical definitions):
 
   - overdue_days, days_to_ga, evidence_strength, ship_rate
 
