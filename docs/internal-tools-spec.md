@@ -1,6 +1,6 @@
 # Internal Tools Spec
 
-Operator-facing tools for managing the keynote tracker data pipeline. These are not customer-facing — they support the ingestion, review, evidence matching, and refresh workflows described in the product spec.
+Operator-facing tools for managing the Launch Scorecard data pipeline. These are not customer-facing — they support the ingestion, review, evidence matching, and refresh workflows described in the product spec.
 
 The internal tools do not need to be polished. Function over form. The priority is: fast, correct, auditable.
 
