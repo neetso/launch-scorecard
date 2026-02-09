@@ -319,6 +319,9 @@ ship_rate = count(status IN [GA, PARTIAL]) / count(status NOT IN [REPLACED, CANC
 
 ### Page: Company Dashboard
 - Recent changes (StatusHistory feed)
+  - "Since" period selector: 7d / 30d / All
+  - Activity filter: upgrades only (e.g., Preview → GA), slips only, new commitments
+  - Status-change CSV export (separate from commitments export)
 - Unshipped commitments
   - Sort on unshipped table (same options as Event Scorecard)
 - Delayed commitments

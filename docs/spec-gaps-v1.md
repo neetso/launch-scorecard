@@ -15,6 +15,7 @@ Tracking changes needed to bring the spec in line with the wireframe v3.1, wiref
 - [x] Evidence display → per-surface: scorecard logged-in shows count link, logged-out adds strength label; detail page shows full evidence list with type badge, URL, excerpt, published date, publisher, supported status
 - [x] Copy evidence list → button added to Commitment Detail, copies bullet list of sources
 - [x] Citation format → canonical format defined with company, title, commitment ID, status as-of, accessed date, stable URL
+- [x] Activity feed controls → "Since" selector (7d/30d/All), activity filter (upgrades/slips/new), status-change CSV export
 
 ---
 
@@ -97,7 +98,7 @@ The spec mentions "Copy citation button" but doesn't define the format.
 
 ---
 
-## 10. Company dashboard: changes-since selector + activity feed filters
+## ~~10. Company dashboard: changes-since selector + activity feed filters~~
 
 **Source:** `docs/wireframe/wireframe-feedback-implemented.md` (P1), wireframe v3.1
 
