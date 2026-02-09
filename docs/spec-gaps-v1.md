@@ -18,6 +18,7 @@ Tracking changes needed to bring the spec in line with the wireframe v3.1, wiref
 - [x] Activity feed controls → "Since" selector (7d/30d/All), activity filter (upgrades/slips/new), status-change CSV export
 - [x] Unshipped table → columns (Commitment with event meta, Status, Target window, Overdue), filter pills (All/Unshipped/Delayed)
 - [x] Ship rate per event + coverage → events list with per-event ship_rate; coverage statement near last-updated
+- [x] Related commitments → sidebar on detail page, priority: same announcement > same product_area > shared tags
 
 ---
 
@@ -146,7 +147,7 @@ Neither is in the spec's Company Dashboard section.
 
 ---
 
-## 13. Commitment detail: related commitments
+## ~~13. Commitment detail: related commitments~~
 
 **Source:** `docs/wireframe/wireframe-feedback-implemented.md` (P1), wireframe v3.1
 

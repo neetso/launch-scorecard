@@ -316,6 +316,7 @@ ship_rate = count(status IN [GA, PARTIAL]) / count(status NOT IN [REPLACED, CANC
 - Copy citation button; canonical format:
   `{Company}, "{title}," Launch Scorecard, commitment ID {commitment_id}. Status: {status} (as of {status_date}). Accessed: {today}. URL: launchscorecard.dev/c/{commitment_id}`
 - Notes + confidence
+- Related commitments sidebar (priority: 1. same announcement, 2. same product_area, 3. shared tags; each item shows title, status, scope)
 
 ### Page: Company Dashboard
 - Recent changes (StatusHistory feed)
