@@ -9,10 +9,11 @@ Tracking changes needed to bring the spec in line with the wireframe v3.1, wiref
 - [x] UpcomingEvent → deferred to v1.1 with provisional schema in spec + stub in `docs/internal-tools-spec.md`
 - [x] Earnings as input type → added to spec with workflow, evidence rules, and confidence caps
 - [x] Ingestion automation → expanded with capture methods (RSS, transcripts, recaps, manual), SLA targets, and cross-ref to internal tools spec
+- [x] Methodology popover → per-surface content defined (Company Dashboard full, Event Scorecard with evidence strength, Commitment Detail compact); added REPLACED + CANCELLED to status definitions
 
 ---
 
-## 4. Methodology popover
+## ~~4. Methodology popover~~
 
 **Source:** `docs/wireframe/wireframe-feedback-implemented.md` (P0), implemented in wireframe v3.1
 

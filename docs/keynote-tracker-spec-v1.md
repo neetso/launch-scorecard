@@ -315,6 +315,27 @@ ship_rate = count(status IN [GA, PARTIAL]) / count(status NOT IN [REPLACED, CANC
 - Delayed commitments
 - Simple reliability stats (ship rate, median time-to-GA)
 
+### Component: Methodology Popover
+
+Accessible from all three main surfaces via an "(i) Methodology" trigger button. Heading: "How we track promises." Content is tailored per surface.
+
+**Company Dashboard — full version:**
+- Status definitions: GA (generally available — shipped to claimed scope), Partial (shipped but limited by region, tier, or platform), Beta (public beta / open preview), Preview (private / limited preview access), Delayed (explicitly pushed past target window), Announced (promised but no shipping evidence yet), Replaced (superseded by a different commitment), Cancelled (explicitly withdrawn; no longer planned)
+- Evidence priority: 1) Release notes / changelogs, 2) Official docs, 3) Official blog with explicit availability, 4) Partner announcements, 5) Third-party verification (only when primary absent)
+- Confidence: 0–1 scale; capped at 0.8 for PARTIAL; reduced when evidence is third-party only or rollout scope is ambiguous
+- Footer: coverage scope statement + last-refreshed timestamp
+
+**Event Scorecard — swaps evidence priority for evidence strength:**
+- Status definitions (same 8 as above)
+- Evidence strength: Strong (release notes + docs), Medium (official blog only), Weak (third-party / indirect)
+- Confidence (same as above)
+- Footer (same as above)
+
+**Commitment Detail — compact; omits status definitions:**
+- Evidence priority (same numbered list as Company Dashboard)
+- Confidence (same as above, plus: "GA requires primary source evidence")
+- Footer (same as above)
+
 ---
 
 ## Source Map (by Phase)
