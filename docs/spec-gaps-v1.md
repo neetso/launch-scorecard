@@ -21,6 +21,7 @@ Tracking changes needed to bring the spec in line with the wireframe v3.1, wiref
 - [x] Related commitments → sidebar on detail page, priority: same announcement > same product_area > shared tags
 - [x] Logged-out scorecard → full section: KPI strip, status bar, basic filters, blur gate, share bar, SEO methodology block
 - [x] Scope visibility → codified: detail page only, not on scorecard table
+- [x] "More filters" pattern → two-level: primary bar (status + search + sort) always visible, "More filters" collapsed with active-count badge + Reset
 
 ---
 
@@ -193,7 +194,7 @@ The spec currently doesn't specify where scope appears in the UI.
 
 ---
 
-## 16. "More filters" pattern
+## ~~16. "More filters" pattern~~
 
 **Source:** wireframe v3.1
 

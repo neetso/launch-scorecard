@@ -302,7 +302,9 @@ ship_rate = count(status IN [GA, PARTIAL]) / count(status NOT IN [REPLACED, CANC
   - Late (overdue_days; displayed as "+Xd" chip when > 0, blank otherwise)
   - Evidence: "N sources" link (logged-in); count + evidence_strength label (logged-out, provides value before sign-up gate)
 - Scope: not shown on scorecard table (detail page only; keeps scorecard scannable)
-- Filters: category, status, product_area, tag
+- Filters (two-level pattern):
+  - Primary bar: status pills + search + sort (always visible)
+  - "More filters" button: category, product_area, tag (collapsed; active-count badge + Reset link when filters applied)
 - Sort (dropdown, default "Most urgent"):
   - Most urgent: DELAYED first by overdue_days descending, then ANNOUNCED by proximity to target_window_end ascending, then shipped statuses last
   - Newest updates: updated_at descending
