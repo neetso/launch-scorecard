@@ -305,9 +305,9 @@ ship_rate = count(status IN [GA, PARTIAL]) / count(status NOT IN [REPLACED, CANC
 2) Filter by status (“unshipped”, “delayed”) and export CSV.
 
 ### Operator workflow (internal/admin)
-1) Create event → ingest official recap → review extracted announcements/commitments.
-2) Run evidence matching → add evidence → write status changes into history.
-3) Weekly refresh for all “not GA” items.
+1) Create event → ingest official recap → review extracted commitments.
+2) Find shipping evidence manually → add evidence via CLI → status changes written to history.
+3) Weekly review: check shipping sources for all "not GA" items.
 
 ---
 
