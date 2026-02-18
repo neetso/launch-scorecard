@@ -1,6 +1,6 @@
 # Internal Tools Spec
 
-Operator-facing tools for managing the Launch Scorecard data pipeline. These are not customer-facing — they support the ingestion, review, evidence matching, and refresh workflows described in the product spec.
+Operator-facing tools for managing the Launch Scorecard data pipeline. These are not customer-facing — they support the ingestion, review, evidence collection, and weekly review workflows described in the product spec and pipeline design doc.
 
 The internal tools do not need to be polished. Function over form. The priority is: fast, correct, auditable.
 
@@ -10,7 +10,7 @@ The internal tools do not need to be polished. Function over form. The priority 
 
 - **Human review is mandatory.** LLM-assisted extraction produces drafts; a human always reviews before publishing.
 - **Every write is traceable.** Status changes require evidence. Evidence has sources. Operator actions are logged.
-- **Minimal clicks for common paths.** The weekly refresh and post-keynote ingestion are the hot paths — optimize for those.
+- **Minimal clicks for common paths.** The post-keynote ingestion review queue is the hot path — optimize for that.
 
 ---
 
@@ -25,18 +25,18 @@ Create and manage Events.
 - **Link to UpcomingEvent** (v1.1): when an UpcomingEvent materializes, link it to the newly created Event
 
 ### v1 scope
-Manual form. Fields map directly to the `Event` entity schema. No automation needed here — events are low-volume (a few per company per year).
+Manual form or rake task. Fields map directly to the `Event` entity schema. No automation needed here — events are low-volume (a few per company per year).
 
 ---
 
 ## Tool 2: Ingestion Pipeline
 
-Extract announcements and commitments from source material.
+Extract commitments from source material.
 
 ### Workflow
 1. **Input**: operator pastes or provides URL to an official recap page, transcript, or blog post
 2. **Fetch + clean**: pull page text (HTML → clean text, or accept pasted text)
-3. **LLM extraction**: run the "split recap into atomic commitments" prompt (see product spec, Prompt 1) → returns structured JSON of announcements + commitments
+3. **LLM extraction**: run the "split recap into atomic commitments" prompt (see product spec, Prompt 1) → returns structured JSON of commitments
 4. **Review queue**: display extracted items for human review
 
 ### Review queue UI
@@ -46,20 +46,18 @@ For each extracted commitment, show:
 - `category` (dropdown)
 - `availability_claim_raw` (editable)
 - `target_window_start` / `target_window_end` (date pickers, nullable)
-- `scope` fields: platform, region, tier, audience (editable chips/tags)
-- `tags` (multi-select from canonical tag list)
+- `scope_notes` (editable text — free-text description of platform/region/tier constraints)
 - Source excerpt from the recap (read-only, for reference)
 
 Operator actions per item:
-- **Accept** → creates Announcement (if new) + Commitment + initial StatusHistory entry (status: ANNOUNCED) + Evidence record (type: BLOG_OFFICIAL or VIDEO_TRANSCRIPT, linking back to the source)
+- **Accept** → creates Commitment (linked to event_id) + initial StatusHistory entry (status: ANNOUNCED) + Evidence record (type: BLOG_OFFICIAL or VIDEO_TRANSCRIPT, linking back to the source)
 - **Edit + Accept** → same as above, with operator's edits applied
 - **Skip** → item does not become a commitment (did not pass eligibility)
-- **Merge** → combine with an existing commitment (e.g., duplicate from a different source)
 
-### Bulk actions
-- Accept all (with confirmation)
-- Skip all remaining
-- Set shared fields (e.g., all items from this source share the same event_id, source_url)
+### Implementation notes
+- Server-rendered cards using Hotwire (Turbo Frames).
+- Accept/Skip buttons submit via Turbo Stream — card removed without page reload.
+- Edit mode: clicking "Edit" expands the card inline. "Save + Accept" submits.
 
 ### SLA targets (from calendar doc)
 | Event type          | Draft available | Published (reviewed) |
@@ -67,80 +65,40 @@ Operator actions per item:
 | Major keynote       | Within 2h       | Within 24–48h        |
 | Earnings call       | Within 4h       | Within 48h           |
 | Product launch post | Within 1h       | Within 24h           |
-| Weekly release notes| Auto-classified | Same-day review      |
+| Weekly release notes| Operator-reviewed | Same-day            |
 
 ---
 
-## Tool 3: Evidence Matcher
+## Tool 3: Evidence & Status Manager
 
-Find and attach evidence to existing commitments.
-
-### Workflow
-1. **Select scope**: a single commitment, all commitments for an event, or all non-terminal commitments for a company
-2. **Candidate sources**: search the company's shipping sources (release notes feeds, docs, changelogs, official blogs) for matches
-3. **LLM validation**: for each candidate, run the "does this evidence prove shipping?" prompt (see product spec, Prompt 2) → returns decision, date, excerpt, reasoning
-4. **Review queue**: display matches for human review
-
-### Review queue UI
-For each candidate match, show:
-- Commitment: promise_text, current status, target window
-- Evidence candidate: URL, published date, excerpt, evidence type
-- LLM decision: suggested status change, reasoning bullets
-- `scope_observed` (editable, for partial shipping)
-
-Operator actions per match:
-- **Accept** → creates Evidence record + StatusHistory entry (old_status → new_status, linked to evidence)
-- **Edit + Accept** → same, with operator corrections (e.g., change suggested status from GA to PARTIAL, adjust scope_observed)
-- **Reject** → no evidence record created; optionally log as "reviewed, not relevant"
-- **Flag for later** → mark for re-check in next refresh cycle
-
-### Confidence auto-adjustment
-When accepting evidence:
-- If evidence type is `THIRD_PARTY_VERIFICATION` only → cap confidence at 0.7
-- If status set to `PARTIAL` → cap confidence at 0.8
-- If evidence type is `RELEASE_NOTES` or `DOCS` → allow confidence up to 1.0
-- Operator can override confidence manually
-
----
-
-## Tool 4: Weekly Refresh
-
-Batch process for updating non-terminal commitments.
-
-### Workflow
-1. **Generate refresh list**: all commitments where `status NOT IN [GA, CANCELLED, REPLACED]`
-2. **Group by company**: run evidence matching (Tool 3) per company, using that company's shipping sources
-3. **Dashboard**: show summary of refresh results
-   - How many commitments checked
-   - How many new evidence matches found
-   - How many status changes pending review
-   - How many now overdue (target_window_end < today, still not shipped)
-4. **Review + publish**: operator reviews pending changes (same UI as Tool 3 review queue)
-
-### Overdue alerts
-After each refresh, flag commitments where:
-- `overdue_days > 0` and status is still `ANNOUNCED` or `PREVIEW` (no progress)
-- `overdue_days > 90` for any non-terminal status (long-stale)
-- `confidence < 0.5` and status is `PARTIAL` (weak evidence for partial claim)
-
-These are internal flags for operator attention, not customer-facing alerts (those are a separate feature).
-
----
-
-## Tool 5: Commitment Editor
-
-Direct CRUD for individual commitments, announcements, and evidence.
+Manually add evidence and update statuses for existing commitments. This is the primary tool for the weekly review cycle.
 
 ### Capabilities
-- **Edit commitment**: all fields on the Commitment entity
-- **Edit announcement**: title, category, source
-- **Add evidence manually**: for cases where automated matching didn't find it but operator has the source
-- **Change status manually**: must provide or link an evidence record (enforced — no status change without evidence, except ANNOUNCED which is the initial state)
-- **Merge commitments**: when duplicates are found (redirects old commitment_id to the canonical one)
-- **Archive commitment**: soft-delete for items that were created in error (distinct from CANCELLED, which is a real status)
+- **Add evidence**: operator provides URL, evidence type, published date, excerpt, and the status it supports. Creates Evidence record + StatusHistory entry.
+- **Change status**: must provide or link an evidence record (enforced — no status change without evidence, except ANNOUNCED which is the initial state).
+- **Edit commitment**: all fields on the Commitment entity. All changes logged to `operator_audit_logs`.
+
+### v1 scope
+Rake tasks (CLI). No UI needed — these are low-volume operations (a few per week during the weekly review cycle).
+
+```
+# Add evidence
+rake evidence:add commitment_id=openai-gpt5-turbo-api \
+  url="https://..." type=DOCS published_at=2026-10-01 \
+  excerpt="GPT-5 Turbo is available..." supports_status=GA
+
+# Change status
+rake commitments:change_status commitment_id=openai-gpt5-turbo-api \
+  new_status=DELAYED evidence_id=<uuid> \
+  note="Blog indicates Q1 2027 target"
+
+# Edit commitment
+rake commitments:edit commitment_id=openai-gpt5-turbo-api \
+  promise_text="GPT-5 Turbo available via API for Plus, Team, and Enterprise"
+```
 
 ### Audit log
-All operator actions (create, edit, status change, merge, archive) are logged with:
+All operator actions (create, edit, status change) are logged with:
 - Operator ID
 - Timestamp
 - Action type
@@ -148,7 +106,7 @@ All operator actions (create, edit, status change, merge, archive) are logged wi
 
 ---
 
-## Tool 6: Upcoming Events Calendar (v1.1 stub)
+## Tool 4: Upcoming Events Calendar (v1.1 stub)
 
 **Not in v1 scope.** Stub for when we build the forward-looking calendar.
 
@@ -164,9 +122,21 @@ The core v1 value is the retrospective ledger (what was promised, did it ship). 
 
 ---
 
+## Descoped from v1
+
+The following tools from the original design were descoped to reduce pipeline complexity. See the pipeline design doc and product spec for full rationale.
+
+| Original tool | What it did | Replaced by |
+|---------------|-------------|-------------|
+| **Evidence Matcher** (Tool 3 in original) | Automated search of shipping sources + LLM validation (Prompt 2) + evidence review queue | Manual evidence add via rake tasks (Tool 3 above) |
+| **Weekly Refresh** (Tool 4 in original) | Cron job re-running evidence matching for all non-terminal commitments | Manual weekly review by operator |
+| **Merge operation** | Duplicate resolution: redirect old commitment_id, move evidence/history | Manual handling — operator skips duplicates during review |
+| **Bulk review actions** | "Accept all", "Skip all", "Set shared fields" in review queue | Per-item review. Add if batch sizes regularly exceed 100. |
+
+---
+
 ## Implementation notes
 
-- Tools 1–5 can start as a simple admin UI or even CLI scripts. The review queue (Tools 2 and 3) is the most important piece to get right — it's the quality gate.
-- The LLM prompts (Prompt 1 for extraction, Prompt 2 for evidence validation) are already defined in the product spec. The internal tools just need to wire them up with the review queue.
-- Consider building Tools 2 and 3 as a single "Ingestion + Evidence" workflow, since post-keynote ingestion often immediately flows into evidence matching for "available today" commitments.
+- Tools 1–3 start as rake tasks. The review queue (Tool 2) is the most important piece to get right — it's the quality gate.
+- The LLM prompt (Prompt 1 for extraction) is defined in the product spec. The internal tools wire it up with the review queue.
 - All tools write to the same database as the public-facing product. There is no separate "staging" — the review step IS the staging gate.

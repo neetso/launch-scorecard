@@ -12,11 +12,11 @@ Rails monolith, API-first, PostgreSQL. The public site, operator tools, and futu
 |---|---|---|
 | Framework | Rails 8 (API + views) | Relational CRUD, background jobs, admin tools, SSR by default |
 | Database | PostgreSQL | Relational schema with FK chains, JSON columns for scope objects, append-only ledger |
-| Background jobs | Solid Queue (Rails 8 built-in) | LLM extraction, evidence matching, weekly refresh — no external dependency |
+| Background jobs | Solid Queue (Rails 8 built-in) | LLM extraction — no external dependency |
 | Frontend | Hotwire (Turbo + Stimulus) + Tailwind | Server-rendered HTML, partial page updates for filters/sort, minimal JS |
 | Auth | Devise + Pundit | Three-tier access (anonymous, authenticated, operator) with policy objects |
 | ORM | ActiveRecord | Native Rails; migrations, associations, validations, scopes |
-| LLM | Anthropic SDK (Ruby) | Extraction prompts, evidence validation — called from background jobs |
+| LLM | Anthropic SDK (Ruby) | Extraction prompt (Prompt 1 only) — called from background job |
 
 ---
 
@@ -37,18 +37,17 @@ app/
 │   └── operator/        # Operator tools (auth-gated, consume same API layer)
 │       ├── events_controller.rb
 │       ├── ingestion_controller.rb
-│       ├── review_controller.rb
-│       └── refresh_controller.rb
+│       └── review_controller.rb
 ├── models/              # Domain logic, validations, associations, computed fields
 ├── policies/            # Pundit policies (anonymous / authenticated / operator)
 ├── services/            # Business operations (status transitions, evidence attachment)
-├── jobs/                # Solid Queue jobs (LLM extraction, evidence matching, refresh)
+├── jobs/                # Solid Queue jobs (LLM extraction)
 ├── views/
 │   ├── pages/           # Public Hotwire views
 │   ├── operator/        # Operator Hotwire views
 │   └── api/             # Jbuilder or serializers (if needed beyond `render json:`)
 └── lib/
-    └── llm/             # LLM prompt runners (extraction, validation)
+    └── llm/             # LLM prompt runner (extraction only)
 ```
 
 ### Key principle
@@ -80,11 +79,7 @@ POST   /api/v1/operator/events
 PATCH  /api/v1/operator/events/:event_id
 POST   /api/v1/operator/ingestion/extract     # submit URL/text → kick off LLM job
 GET    /api/v1/operator/ingestion/review       # pending extracted items
-POST   /api/v1/operator/ingestion/accept       # accept/edit/skip/merge items
-POST   /api/v1/operator/evidence/match         # run evidence matching for scope
-GET    /api/v1/operator/evidence/review        # pending evidence matches
-POST   /api/v1/operator/evidence/accept        # accept/edit/reject matches
-POST   /api/v1/operator/refresh                # trigger weekly refresh
+POST   /api/v1/operator/ingestion/accept       # accept/edit/skip items
 PATCH  /api/v1/operator/commitments/:id
 POST   /api/v1/operator/commitments/:id/evidence   # manual evidence add
 POST   /api/v1/operator/commitments/:id/status      # manual status change (requires evidence)
@@ -106,18 +101,17 @@ Follows the product spec entity definitions directly. Key implementation notes:
 ### Tables
 
 - `events` — slug-based `event_id` as primary key
-- `announcements` — UUID primary key, FK to events
-- `commitments` — slug-based `commitment_id` as primary key (stable public URLs)
+- `commitments` — slug-based `commitment_id` as primary key (stable public URLs), FK to events
 - `evidence` — UUID primary key, FK to commitments
 - `status_histories` — UUID primary key, FK to commitments + evidence. Append-only (no updates or deletes).
 - `raw_release_items` — staging table for ingestion pipeline. Not exposed publicly.
 - `operator_audit_logs` — all operator writes logged with before/after values.
 - `users` — Devise-managed. `role` enum: `user`, `operator`.
 
-### JSON columns
+### Text columns (not JSON)
 
-- `commitments.scope` — `{ platform: [], region: [], tier: [], audience: [], notes: "" }`
-- `evidence.scope_observed` — same structure
+- `commitments.scope_notes` — free-text description of platform/region/tier constraints
+- `evidence.scope_observed` — free-text: what evidence actually indicates re: scope
 
 ### Computed fields
 
@@ -125,20 +119,20 @@ Implemented as model methods (or database views if query performance demands it)
 
 ```ruby
 # Commitment model
-def overdue_days ...    # see spec: Computed Fields section
-def days_to_ga ...      # see spec
-def evidence_strength . # see spec: Strong / Medium / Weak / None
+def overdue_days ...       # see spec: Computed Fields section
+def days_to_ga ...         # see spec
+def evidence_strength ...  # see spec: Strong / Medium / Weak / None
 
 # Event / Company scope
-def ship_rate ...       # see spec
-def median_days_to_ga . # see spec
+def ship_rate ...          # see spec
+def median_days_to_ga ...  # see spec
 ```
 
 These are serialized into API responses. If list queries become slow, materialize as database columns refreshed on write.
 
 ### Indexes
 
-- `commitments`: index on `(event_id, status)`, `(announcement_id)`, `(product_area)`, full-text on `promise_text`
+- `commitments`: index on `(event_id, status)`, `(product_area)`, full-text on `promise_text`
 - `evidence`: index on `(commitment_id, evidence_type)`
 - `status_histories`: index on `(commitment_id, changed_at)`
 - `events`: index on `(company, start_date)`
@@ -166,8 +160,6 @@ All async work runs through Solid Queue.
 | Job | Trigger | What it does |
 |---|---|---|
 | `IngestionExtractJob` | Operator submits URL/text | Fetch + clean text → LLM extraction (Prompt 1) → write to review queue |
-| `EvidenceMatchJob` | Operator selects scope | Search shipping sources → LLM validation (Prompt 2) → write to review queue |
-| `WeeklyRefreshJob` | Scheduled (cron) or manual | Run EvidenceMatchJob for all non-terminal commitments, grouped by company |
 | `ExportJob` | User requests CSV | Generate CSV in background → serve download link |
 
 Jobs write draft results to the database (review queue tables). Nothing is published without operator review.
@@ -188,16 +180,16 @@ Jobs write draft results to the database (review queue tables). Nothing is publi
 ### Operator tools
 
 - Standard Rails forms with Turbo for inline updates.
-- Review queue: list of cards, each with accept/edit/skip/merge buttons. Turbo Streams for removing reviewed items without full page reload.
+- Ingestion review queue: list of cards, each with accept/edit/skip buttons. Turbo Streams for removing reviewed items without full page reload.
+- Evidence and status changes via CLI (rake tasks) — no evidence review queue UI in v1.
 - No need for high polish — function over form (per internal tools spec).
 
 ### Shared UI components (partials)
 
 - `_status_pill.html.erb`
-- `_evidence_badge.html.erb`
+- `_evidence_strength_badge.html.erb`
+- `_evidence_type_badge.html.erb`
 - `_overdue_chip.html.erb`
-- `_scope_chips.html.erb`
-- `_confidence_bar.html.erb`
 - `_kpi_chip.html.erb`
 - `_methodology_popover.html.erb`
 

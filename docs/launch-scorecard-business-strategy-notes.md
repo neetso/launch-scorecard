@@ -147,8 +147,8 @@ These work because they’re:
 ## Risks & mitigations
 ### Risk: Apple/Meta ambiguity makes you look wrong
 Mitigation:
-- Make `PARTIAL` + `confidence` visible
-- Show scope constraints explicitly
+- Make `PARTIAL` status + `evidence_strength` visible
+- Show scope notes on commitment detail
 - Require primary evidence to mark GA
 
 ### Risk: Data volume explodes

@@ -34,7 +34,7 @@
 
  \- [ ] Event scorecard
 
- \- [ ] Commitment detail  
+ \- [ ] Commitment detail
 
  Includes:
 
@@ -42,9 +42,9 @@
 
  \- [ ] Evidence priority rules
 
- \- [ ] Confidence meaning + caps
+ \- [ ] Evidence strength definitions (Strong/Medium/Weak)
 
- \- [ ] “Last refreshed” timestamp
+ \- [ ] "Last refreshed" timestamp
 
 
 
@@ -58,7 +58,7 @@
 
  \- [ ] **Sort** by: `Most overdue` and `Newest shipped`
 
- \- [ ] See **Scope** without leaving the scorecard (scope column or row expand)
+ \- [ ] See **Scope notes** on commitment detail page
 
  \- [ ] Click into a commitment detail page
 
@@ -110,7 +110,7 @@
 
   \- [ ] First shipped date
 
-  \- [ ] Confidence
+  \- [ ] Evidence strength label (Strong/Medium/Weak)
 
   \- [ ] Evidence count link
 
@@ -124,7 +124,7 @@
 
  \- [ ] Target window
 
- \- [ ] Scope (platform/region/tier/audience)
+ \- [ ] Scope notes (free text)
 
  \- [ ] Status + status-as-of date
 
@@ -198,13 +198,11 @@
 
 
 
-\### Scope + Partial are usable and consistent
+\### Partial status is usable
 
-\- [ ] `PARTIAL` rows always show *why* (scope notes) on scorecard (inline or row expand).
+\- [ ] `PARTIAL` rows show *why* (via scope notes on commitment detail page).
 
-\- [ ] Confidence cap enforced for `PARTIAL` unless confirmed broader.
-
-\- [ ] Scope chips are consistent across scorecard and detail.
+\- [ ] `scope_observed` on evidence records explains what was actually observed.
 
 
 

@@ -18,6 +18,23 @@ This is an **evidence-led ledger**. The database and status history are the moat
 
 ---
 
+## Descoped from v1 (deferred, not deleted)
+
+The following features were evaluated and explicitly deferred to reduce pipeline complexity and LLM dependency surface area. Each is viable for a future version once the core ledger is proven.
+
+| Feature | Rationale for deferral | Reintroduce when |
+|---------|----------------------|------------------|
+| **Automated evidence matching** (LLM searches shipping sources + validates matches) | Hardest technical problem (retrieval strategy underspecified). Second LLM touchpoint adds non-determinism. At MVP scale (30–150 commitments), manual evidence add is ~30–60 min/week. | Commitment count exceeds what one operator can manually track (~300+), or when evidence sources have structured APIs |
+| **Continuous release notes monitoring** (scraping + auto-classification) | Adds scraping fragility (page structure changes break silently), a staging table with dual-purpose semantics, and a third LLM touchpoint (rubric scoring). Operator can check release notes weekly and use event-driven ingestion. | Shipping cadence is too high for manual monitoring, or structured RSS/API feeds become available |
+| **`Announcement` entity** (intermediate grouping between Event and Commitment) | Adds a join table, extra extraction step, and a layer in the review UI. Not referenced in any public URL or computed field. | Cross-event analysis needs coarse groupings, or UI benefits from collapsible sections |
+| **Structured `scope` object** (JSON with platform/region/tier/audience arrays) | Hardest field for LLM to extract correctly. Drives complex scope-matching logic in evidence validation. Most OpenAI commitments are "API" or "ChatGPT" + a tier qualifier — a text field suffices. | Multi-company comparisons need machine-queryable scope filtering |
+| **`confidence` numeric field** (float 0–1 with auto-adjustment rules) | Adds branching logic to every evidence acceptance. `evidence_strength` (Strong/Medium/Weak) provides the same signal more interpretably. Invites false precision. | Analyst demand for granular confidence, or Phase 3 (Apple/Meta) where ambiguity is higher |
+| **Tags** (12 canonical tags per commitment) | Adds LLM extraction field, multi-select in review UI, filter dimension on every view. At 30–150 commitments, `category` + `product_area` + search covers filtering needs. | 500+ commitments or cross-company tag views needed |
+| **Merge operation** (duplicate resolution across sources) | Requires redirect logic, evidence/history migration between records, and merge UI. Rare at MVP scale with one operator. | Multi-source ingestion creates frequent duplicates |
+| **Bulk actions in review queue** (accept all, skip all, set shared fields) | UI complexity for an optimization. Per-item review is fine at 30–100 items. | Ingestion batches regularly exceed 100 items |
+
+---
+
 ## Design Principle: API-First
 
 Every feature is built as an API endpoint first, UI second. The public site and internal operator tools are both consumers of the same API.
@@ -51,10 +68,11 @@ Every feature is built as an API endpoint first, UI second. The public site and 
 
 ## Core Concepts & Glossary
 - **Event**: a keynote / developer conference / launch moment (e.g., WWDC 2024 keynote).
-- **Announcement**: a coarse “announced thing” grouped within an event (e.g., “Apple Intelligence”).
-- **Commitment** (core unit): an atomic promise statement that can be judged shipped/not shipped.
+- **Commitment** (core unit): an atomic promise statement that can be judged shipped/not shipped. Belongs directly to an Event.
 - **Evidence**: a dated source proving shipping status (release notes, docs, roadmap, earnings, etc.).
 - **Status History**: immutable ledger of status changes, each tied to evidence.
+
+> **Note:** The `Announcement` entity (coarse grouping within an event, e.g., "Apple Intelligence") is deferred from v1. Commitments link directly to Events. The `category` field on Commitment provides lightweight grouping. See "Descoped from v1" for rationale.
 
 ---
 
@@ -93,40 +111,26 @@ Fields:
 - `notes` (text, optional)
 - `created_at`, `updated_at` (timestamps)
 
-### Entity: `Announcement`
-A coarse grouping within an event (usually a recap section).
-
-Fields:
-- `announcement_id` (string/uuid)
-- `event_id` (fk)
-- `title` (string)
-- `category` (enum: MODEL, API, CLOUD_SERVICE, OS_FEATURE, HARDWARE, PLATFORM, PRICING, PARTNERSHIP, OTHER)
-- `source_url` (string; official)
-- `source_excerpt` (string <= 240 chars, optional)
-- `created_at`, `updated_at`
-
 ### Entity: `Commitment`  ✅ core unit
 Atomic promise statement.
 
 Fields:
 - `commitment_id` (string, **stable public slug**; never reused)
-- `announcement_id` (fk)
+- `event_id` (fk)
 - `promise_text` (string; one sentence)
-- `product_area` (string; e.g. “AWS Bedrock”, “iOS Siri”, “OpenAI API”)
-- `scope` (object/json):
-  - `platform` (array[string])  // e.g. iOS, macOS, Azure, Web
-  - `region` (array[string])    // e.g. US, EU, global
-  - `tier` (array[string])      // e.g. Free, Pro, Enterprise
-  - `audience` (array[string])  // e.g. devs, consumers, enterprises
-  - `notes` (string)
-- `availability_claim_raw` (string; exact language like “later this year”, “rolling out”)
+- `product_area` (string; e.g. "AWS Bedrock", "iOS Siri", "OpenAI API")
+- `category` (enum: MODEL, API, CLOUD_SERVICE, OS_FEATURE, HARDWARE, PLATFORM, PRICING, PARTNERSHIP, OTHER)
+- `scope_notes` (text; free-text description of platform/region/tier constraints, e.g. "API, Plus/Team/Enterprise, global")
+- `availability_claim_raw` (string; exact language like "later this year", "rolling out")
 - `target_window_start` (date, nullable)
 - `target_window_end` (date, nullable)
 - `status` (enum: see taxonomy)
 - `first_ship_date` (date, nullable) // earliest evidence of availability
-- `confidence` (float 0–1) // especially for Apple/Meta/NVIDIA messy evidence
-- `tags` (array[string], optional) // e.g. “AI”, “privacy”, “on-device”
+- `source_url` (string; official source for the commitment)
+- `source_excerpt` (string <= 240 chars, optional)
 - `created_at`, `updated_at`
+
+> **Deferred fields:** `confidence` (float 0–1), `tags` (array[string]), structured `scope` (JSON object with platform/region/tier/audience arrays). See "Descoped from v1."
 
 ### Entity: `Evidence`
 Dated proof that supports a status (or scope limitation).
@@ -149,7 +153,7 @@ Fields:
 - `published_at` (date)
 - `excerpt` (string <= 240 chars)
 - `supports_status` (enum: PREVIEW, PUBLIC_BETA, GA, PARTIAL, DELAYED, REPLACED, CANCELLED)
-- `scope_observed` (object/json, optional) // what this evidence actually indicates
+- `scope_observed` (text, optional) // free-text: what this evidence actually indicates re: scope
 - `added_at` (timestamp)
 
 ### Entity: `StatusHistory`  ✅ defensibility ledger
@@ -161,7 +165,7 @@ Fields:
 - `old_status` (enum, nullable for initial)
 - `new_status` (enum)
 - `changed_at` (timestamp)
-- `evidence_id` (fk, required for non-initial transitions)
+- `evidence_id` (fk, nullable; required for non-initial transitions — enforced at application level)
 - `note` (string, optional)
 
 ### (Optional v1.1) Entity: `OutcomeSignals`
@@ -225,7 +229,7 @@ How late a commitment is relative to its claimed target window.
 
 Calendar days from announcement to first evidence of general availability.
 
-**Inputs:** `event.start_date` (from parent event), `first_ship_date`, `status`
+**Inputs:** `event.start_date` (via commitment's `event_id`), `first_ship_date`, `status`
 
 **Calculation:**
 - If `status = GA` and `first_ship_date` exists → `first_ship_date − event.start_date` in days
@@ -292,7 +296,6 @@ ship_rate = count(status IN [GA, PARTIAL]) / count(status NOT IN [REPLACED, CANC
 - Event: `/event/{event_id}`
 - Company dashboard: `/company/{company}`
 - Commitment detail: `/c/{commitment_id}`  (stable, never changes)
-- Optional: `/tag/{tag}`
 
 ---
 
@@ -322,7 +325,7 @@ ship_rate = count(status IN [GA, PARTIAL]) / count(status NOT IN [REPLACED, CANC
 - Scope: not shown on scorecard table (detail page only; keeps scorecard scannable)
 - Filters (two-level pattern):
   - Primary bar: status pills + search + sort (always visible)
-  - "More filters" button: category, product_area, tag (collapsed; active-count badge + Reset link when filters applied)
+  - "More filters" button: category, product_area (collapsed; active-count badge + Reset link when filters applied)
 - Sort (dropdown, default "Most urgent"):
   - Most urgent: DELAYED first by overdue_days descending, then ANNOUNCED by proximity to target_window_end ascending, then shipped statuses last
   - Newest updates: updated_at descending
@@ -341,14 +344,13 @@ ship_rate = count(status IN [GA, PARTIAL]) / count(status NOT IN [REPLACED, CANC
 - SEO methodology block (static, crawlable): methodology summary, coverage statement, update cadence
 
 ### Page: Commitment Detail (citation target)
-- Promise text + scope
+- Promise text + scope notes (free text)
 - Timeline (StatusHistory)
 - Evidence list (per item: type badge, URL, excerpt, published date, publisher, supported status)
 - Copy evidence list button (copies bullet list: each item includes source type, URL, published date, excerpt)
 - Copy citation button; canonical format:
   `{Company}, "{title}," Launch Scorecard, commitment ID {commitment_id}. Status: {status} (as of {status_date}). Accessed: {today}. URL: launchscorecard.dev/c/{commitment_id}`
-- Notes + confidence
-- Related commitments sidebar (priority: 1. same announcement, 2. same product_area, 3. shared tags; each item shows title, status, scope)
+- Related commitments sidebar (priority: 1. same event, 2. same product_area; each item shows title, status)
 
 ### Page: Company Dashboard
 - Recent changes (StatusHistory feed)
@@ -371,18 +373,17 @@ Accessible from all three main surfaces via an "(i) Methodology" trigger button.
 **Company Dashboard — full version:**
 - Status definitions: GA (generally available — shipped to claimed scope), Partial (shipped but limited by region, tier, or platform), Beta (public beta / open preview), Preview (private / limited preview access), Delayed (explicitly pushed past target window), Announced (promised but no shipping evidence yet), Replaced (superseded by a different commitment), Cancelled (explicitly withdrawn; no longer planned)
 - Evidence priority: 1) Release notes / changelogs, 2) Official docs, 3) Official blog with explicit availability, 4) Partner announcements, 5) Third-party verification (only when primary absent)
-- Confidence: 0–1 scale; capped at 0.8 for PARTIAL; reduced when evidence is third-party only or rollout scope is ambiguous
+- Evidence strength: Strong (release notes / changelogs / docs), Medium (official blog), Weak (third-party / indirect), None (no evidence)
 - Footer: coverage scope statement + last-refreshed timestamp
 
-**Event Scorecard — swaps evidence priority for evidence strength:**
+**Event Scorecard — same content, tailored:**
 - Status definitions (same 8 as above)
-- Evidence strength: Strong (release notes + docs), Medium (official blog only), Weak (third-party / indirect)
-- Confidence (same as above)
+- Evidence strength (same as above)
 - Footer (same as above)
 
 **Commitment Detail — compact; omits status definitions:**
 - Evidence priority (same numbered list as Company Dashboard)
-- Confidence (same as above, plus: "GA requires primary source evidence")
+- GA rule: "GA requires at least one primary source (release notes, docs, or official blog)"
 - Footer (same as above)
 
 ---
@@ -460,9 +461,9 @@ Goal: prefer primary, structured sources; avoid scraping social unless for outco
 
 ## Messy Data Strategy (Phase 2 & 3)
 
-### Confidence + Partial Shipping as first-class concepts
-- Always store `scope_observed` in Evidence.
-- If evidence indicates limited rollout, set status `PARTIAL` and keep `confidence` < 1.
+### Partial Shipping as a first-class concept
+- Always store `scope_observed` in Evidence when rollout is limited.
+- If evidence indicates limited rollout, set status `PARTIAL`.
 
 ### Canonical “Promise Extraction” inputs
 For Apple/Meta especially, do NOT rely on a single recap page.
@@ -493,9 +494,9 @@ Implementation idea:
 ### Meta rollout ambiguity
 - Many features ship progressively with limited official precision.
 - Use:
-  - official help center / changelog posts when they explicitly say “available now”
-  - otherwise keep `PARTIAL` + lower confidence
-- Add `tier` scope for “test group / limited users” if mentioned.
+  - official help center / changelog posts when they explicitly say "available now"
+  - otherwise keep `PARTIAL` and note scope limitations in `scope_observed`
+- Note "test group / limited users" in `scope_notes` if mentioned.
 
 ---
 
@@ -551,7 +552,7 @@ Notes:
 ---
 
 ## Operational Cadence
-- Weekly: refresh evidence matching for all commitments not in `GA/CANCELLED/REPLACED`.
+- Weekly: operator manually reviews shipping sources for all commitments not in `GA/CANCELLED/REPLACED`. Add evidence and update statuses as found.
 - During keynote weeks: run event ingestion same-day, publish scorecard quickly with `ANNOUNCED` status.
 
 ---
@@ -564,56 +565,61 @@ Notes:
 
 ## Acceptance Criteria (v1)
 - You can publish an event scorecard with 30–150 commitments.
-- Each commitment has a stable URL and at least one official source linking back to the promise.
+- Each commitment has a stable URL (`/c/{commitment_id}`) and at least one official source linking back to the promise.
 - Any non-ANNOUNCED status has at least one Evidence record + StatusHistory entry.
 - Analysts can cite the commitment page as a source with dated proof.
+- LLM extraction (Prompt 1) is the only automated LLM touchpoint. Evidence collection is manual.
 
 -------
 
 ## **Ingestion workflow (minimal but scalable)**
 
-**Core principle:** auto-capture → LLM draft → human review → publish. Never publish without human review. See `docs/internal-tools-spec.md` for tool-level detail.
+**Core principle:** LLM-assisted extraction → human review → publish. Never publish without human review. See `docs/internal-tools-spec.md` for tool-level detail.
 
 ### **Step 1: Capture source material**
 
-Source material arrives through different channels depending on the event type:
-
-**Structured feeds (continuous monitoring)**
-- RSS/webhook monitors on official release note feeds: AWS "What's New", Microsoft 365 Roadmap, Google Cloud release notes, OpenAI product releases blog
-- These fire automatically when new content is published and feed into the `raw_release_items` pipeline
+Source material arrives through operator-initiated capture:
 
 **Keynote/conference capture (event-driven)**
 - **Livestream transcripts:** pull YouTube auto-generated captions or use speech-to-text on the livestream. Gives raw promise candidates within minutes of the event ending. Store with timestamps for later citation.
-- **Official recap pages:** Microsoft "Book of News", AWS "Top announcements", Google I/O recap posts. These are structured and publish same-day — monitor the known URL patterns and trigger ingestion when live.
+- **Official recap pages:** Microsoft "Book of News", AWS "Top announcements", Google I/O recap posts. Operator triggers ingestion when these publish.
 - **Press releases:** company newsrooms and PR wires (Business Wire, PR Newswire). Often go live during or right after the keynote.
 
 **Earnings transcripts (quarterly)**
 - Available within hours from IR pages. See "Earnings calls as an input type" section for the specific workflow.
 
-**Manual input (fallback)**
-- Operator pastes text or provides URL directly. Always available for sources that aren't covered by automated capture.
+**Manual input (primary for release notes)**
+- Operator pastes text or provides URL directly. For continuous release notes (e.g., OpenAI product releases), operator checks weekly and triggers ingestion for significant items.
+
+> **Deferred:** Automated RSS/webhook monitoring and continuous release notes scraping. See "Descoped from v1."
 
 ### **Step 2: Seed event + extract commitments (LLM-assisted)**
 
 For each event:
 1. Create the Event record (company, name, type, dates, source URLs)
 2. Pull the source material text (HTML → clean text, or transcript)
-3. Run the "split recap into atomic commitments" prompt (see Prompt 1 below) → structured JSON of announcements + commitments
-4. Operator reviews extracted items: accept, edit, skip, or merge (see internal tools spec, Tool 2)
-5. Accepted items create Announcement + Commitment + initial StatusHistory (ANNOUNCED) + source Evidence record
+3. Run the "split recap into atomic commitments" prompt (see Prompt 1 below) → structured JSON of commitments
+4. Operator reviews extracted items: accept, edit, or skip (see internal tools spec, Tool 2)
+5. Accepted items create Commitment + initial StatusHistory (ANNOUNCED) + source Evidence record
 
-### **Step 3: Evidence matching (semi-automated)**
+### **Step 3: Evidence collection (manual)**
 
-For each commitment, search that company's shipping sources (release notes, docs, changelogs, official blogs) for evidence of delivery.
+For each commitment, the operator finds and attaches evidence of delivery from the company's shipping sources (release notes, docs, changelogs, official blogs).
 
-1. Candidate matching: search shipping sources for references to the commitment's product area, feature name, or related keywords
-2. LLM validation: for each candidate, run the evidence validation prompt (see Prompt 2 below) → decision, date, excerpt
-3. Operator reviews matches: accept, edit, reject, or flag for later
-4. Accepted matches create Evidence record + StatusHistory entry
+1. Operator identifies evidence source (URL, published date, excerpt)
+2. Operator adds evidence via CLI or API (`rake evidence:add` or operator endpoint)
+3. Evidence record + StatusHistory entry created
 
-### **Step 4: Weekly refresh**
+This is a manual process in v1. The operator checks shipping sources during the weekly review cycle.
 
-Re-run evidence matching (Step 3) for all commitments where `status NOT IN [GA, CANCELLED, REPLACED]`.
+> **Deferred:** Automated evidence matching (LLM-powered search + validation). See "Descoped from v1."
+
+### **Step 4: Weekly review**
+
+Operator reviews all commitments where `status NOT IN [GA, CANCELLED, REPLACED]`:
+- Check shipping sources for new evidence
+- Add evidence and update status as found
+- Flag overdue commitments (target_window_end < today, still not shipped)
 
 This is where compounding happens — each week, more commitments move from ANNOUNCED to shipped states, and the evidence chain grows.
 
@@ -624,7 +630,7 @@ This is where compounding happens — each week, more commitments move from ANNO
 | Major keynote       | Within 2h             | Within 24–48h              |
 | Earnings call       | Within 4h             | Within 48h                 |
 | Product launch post | Within 1h             | Within 24h                 |
-| Weekly release notes| Auto-classified       | Same-day review            |
+| Weekly release notes| Operator-reviewed     | Same-day                   |
 
 -----
 
@@ -661,13 +667,14 @@ This is the higher-value use case. Scan the transcript for references to existin
 ### Evidence rules for EARNINGS_IR
 - `EARNINGS_IR` evidence **can** advance a commitment to `PARTIAL` or support a `DELAYED` status change
 - `EARNINGS_IR` evidence **cannot** alone advance a commitment to `GA` — require at least one primary source (`RELEASE_NOTES`, `DOCS`, or `BLOG_OFFICIAL`) to confirm GA. Earnings claims are management statements, not shipping proof.
-- When `EARNINGS_IR` is the only evidence for a status, cap `confidence` at 0.7
+- When `EARNINGS_IR` is the only evidence for a status, `evidence_strength` is **Weak**
 
 ### Ingestion workflow for earnings
 1. Obtain transcript (available within hours from IR pages, Seeking Alpha, etc.)
-2. Run LLM extraction: identify (a) new forward-looking claims → candidate commitments, (b) references to existing tracked commitments → candidate evidence
-3. Operator reviews both sets in the standard review queue (see internal tools spec, Tool 2)
-4. Publish
+2. Run LLM extraction: identify new forward-looking claims → candidate commitments
+3. Operator reviews in the standard review queue (see internal tools spec, Tool 2)
+4. For references to existing tracked commitments, operator manually adds evidence via `rake evidence:add`
+5. Publish
 
 **SLA:** Draft within 4h of transcript availability. Published (reviewed) within 48h.
 
@@ -675,9 +682,9 @@ This is the higher-value use case. Scan the transcript for references to existin
 
 ## **Prompt examples for extraction and validation**
 
-### **Prompt 1 — “Split recap into atomic commitments”**
+### **Prompt 1 — "Split recap into atomic commitments"**
 
-Use on an official recap page (AWS “Top announcements”, Microsoft “Book of News”, Google I/O recap, OpenAI post).
+Use on an official recap page (AWS "Top announcements", Microsoft "Book of News", Google I/O recap, OpenAI post).
 
 ```text
 You are extracting atomic product commitments from a keynote recap.
@@ -685,41 +692,35 @@ You are extracting atomic product commitments from a keynote recap.
 Input: text of an official recap page.
 Task:
 
-1) Identify announcements (coarse groupings).
-2) For each announcement, split into ATOMIC commitments (each must be a single promise that could be judged shipped/not shipped).
-3) For each commitment, capture scope and timing language exactly.
+1) Split the recap into ATOMIC commitments (each must be a single promise that could be judged shipped/not shipped).
+2) For each commitment, capture scope and timing language exactly.
 
 Rules:
 
-- If the recap uses vague language (“coming later”), keep it as availability_claim_raw and leave target_window dates null.
-- If the promise is conditional or partial, reflect that in scope (platform/region/tier).
+- If the recap uses vague language ("coming later"), keep it as availability_claim_raw and leave target_window dates null.
+- If the promise is conditional or partial, describe the constraints in scope_notes.
 - Do not invent details. If unknown, set null/empty.
 
 Output JSON:
 {
-  "announcements":[
+  "commitments":[
     {
-      "title":"",
+      "promise_text":"",
+      "product_area":"",
       "category":"",
-      "source_quote":"",
-      "commitments":[
-        {
-          "promise_text":"",
-          "product_area":"",
-          "availability_claim_raw":"",
-          "target_window_start": null,
-          "target_window_end": null,
-          "scope": {"platform":[], "region":[], "tier":[], "notes":""}
-        }
-      ]
+      "availability_claim_raw":"",
+      "target_window_start": null,
+      "target_window_end": null,
+      "scope_notes": "",
+      "source_excerpt": ""
     }
   ]
 }
 ```
 
-### **Prompt 2 — “Does this evidence prove shipping, and what status?”**
+### **Prompt 2 — "Does this evidence prove shipping, and what status?" (deferred)**
 
-Use on a candidate evidence page (release notes, docs, roadmap entry).
+> **Deferred from v1.** Evidence is added manually by the operator. This prompt is retained for future automated evidence matching. See "Descoped from v1."
 
 ```text
 You are validating whether a piece of evidence supports a delivery status for a specific commitment.
@@ -727,7 +728,7 @@ You are validating whether a piece of evidence supports a delivery status for a 
 Commitment:
 
 - promise_text: "<...>"
-- scope: <json>
+- scope_notes: "<...>"
 - current_status: "<...>"
 
 Evidence text:
@@ -874,21 +875,21 @@ To set `GA` specifically:
 
 If evidence indicates only limited rollout:
 - set status `PARTIAL`
-- store `scope_observed`
-- set `confidence <= 0.8` until confirmed broader.
+- store `scope_observed` on the evidence record (free text describing what was actually observed)
 
 ---
 
 ## 7) Weekly selection workflow (release notes without noise)
-We ingest release notes into `raw_items` (internal table) but only promote eligible items to commitments.
+Operator reviews release notes manually and promotes eligible items to commitments.
 
 Workflow:
-1) Scrape/collect release notes into `raw_release_items` (date + text + url)
-2) Classify each raw item as **track** or **skip** using the eligibility rubric (see below)
-3) For items that pass:
-   - create or match an existing Announcement + Commitment
-   - add Evidence
-   - update StatusHistory if status changed
+1) Operator checks OpenAI release notes (product releases hub, ChatGPT release notes, API/model notes)
+2) For significant items, operator triggers ingestion (`rake ingestion:extract` with URL or pasted text)
+3) Use the eligibility rubric (see below) as operator guidance for what to track vs skip
+4) Accepted items become Commitments via the ingestion review queue
+5) For items that also serve as shipping evidence, operator adds evidence via `rake evidence:add`
+
+> **Deferred:** Automated scraping into `raw_release_items` + LLM-assisted rubric scoring. See "Descoped from v1." The rubric below is retained as operator reference.
 
 ---
 
@@ -920,8 +921,11 @@ Map:
 
 ---
 
-## 9) Canonical OpenAI tags (recommended)
-Add 1–3 tags to each commitment from:
+## 9) Canonical OpenAI tags (deferred)
+
+> **Deferred from v1.** Tags add extraction complexity and a filter dimension on every view. At MVP scale, `category` + `product_area` + search covers filtering needs. Retained here as reference for when tag support is added.
+
+Suggested 1–3 tags per commitment from:
 - `model_launch`
 - `model_deprecation`
 - `pricing_limits`
@@ -939,7 +943,7 @@ Add 1–3 tags to each commitment from:
 
 ## 10) Suggested configuration JSON (optional for ingestion engine)
 
-> Use this config to drive scrapers/classifiers. Keep it in-repo as `config/company_rules/openai.json`.
+> Use this config as operator reference. Keep it in-repo as `config/company_rules/openai.json`.
 
 ```json
 {
@@ -962,9 +966,7 @@ Add 1–3 tags to each commitment from:
   },
   "status_rules": {
     "ga_requires_primary": true,
-    "partial_if_limited_rollout": true,
-    "default_confidence": 0.9,
-    "partial_confidence_cap": 0.8
+    "partial_if_limited_rollout": true
   },
   "ingestion_eligibility": {
     "track_min_score": 2,
@@ -980,21 +982,7 @@ Add 1–3 tags to each commitment from:
       "major_workflow_ui": 1,
       "connectors_integrations": 1
     }
-  },
-  "tags": [
-    "model_launch",
-    "model_deprecation",
-    "pricing_limits",
-    "api_primitive",
-    "tools_agents",
-    "multimodal",
-    "enterprise_admin",
-    "marketplace_distribution",
-    "safety_policy",
-    "memory_personalization",
-    "connectors_integrations",
-    "apps_desktop_mobile"
-  ]
+  }
 }
 ```
 
@@ -1023,7 +1011,7 @@ Implementation notes for UI:
 
 - Build components around your schema:
 
-  - StatusPill, ConfidenceBar, EvidenceBadges, ScopeChips, OverdueChip
+  - StatusPill, EvidenceStrengthBadge, EvidenceTypeBadges, OverdueChip
 
 - Compute fields server-side once (see **Computed Fields** section for canonical definitions):
 
